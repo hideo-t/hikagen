@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a1a2e">
+<title>火加減 ─ HIKAGEN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@400;700&family=Shippori+Mincho:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0f0f1a;
+  --bg-card: #16162a;
+  --text: #d4cfc6;
+  --text-dim: #7a7672;
+  --accent: #e8823a;
+  --accent-glow: rgba(232, 130, 58, 0.25);
+  --cold: #3a5a7c;
+  --cold-light: #5a8ab4;
+  --radius: 12px;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Shippori Mincho', serif;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ===== SCREEN CONTAINER ===== */
+.screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 2rem 1.5rem;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+.screen.active {
+  display: flex;
+  opacity: 1;
+}
+.screen.fade-in {
+  animation: fadeIn 0.8s ease forwards;
+}
+.screen.fade-out {
+  animation: fadeOut 0.5s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* ===== OPENING ===== */
+.opening-title {
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 2.4rem;
+  letter-spacing: 0.3em;
+  color: var(--text);
+  margin-bottom: 0.3rem;
+  text-shadow: 0 0 40px var(--accent-glow);
+}
+.opening-sub {
+  font-size: 0.85rem;
+  letter-spacing: 0.5em;
+  color: var(--text-dim);
+  margin-bottom: 2.5rem;
+}
+
+/* ===== IMAGE ===== */
+.scene-image-wrap {
+  width: 100%;
+  max-width: 360px;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 2rem;
+  background: var(--bg-card);
+  position: relative;
+}
+.scene-image-wrap img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.scene-image-wrap .placeholder {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #1a1a30, #1e2a3a);
+  position: relative;
+  overflow: hidden;
+}
+.placeholder::after {
+  content: '🔥';
+  font-size: 2.5rem;
+  opacity: 0.3;
+  animation: flicker 3s ease-in-out infinite;
+}
+@keyframes flicker {
+  0%, 100% { opacity: 0.2; transform: scale(1); }
+  50%      { opacity: 0.4; transform: scale(1.05); }
+}
+
+/* ===== TEXT ===== */
+.scene-text {
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 1.15rem;
+  line-height: 2;
+  text-align: center;
+  color: var(--text);
+  margin-bottom: 2.5rem;
+  max-width: 320px;
+  letter-spacing: 0.05em;
+}
+
+/* ===== CHOICES ===== */
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  width: 100%;
+  max-width: 340px;
+}
+.choice-btn {
+  background: var(--bg-card);
+  border: 1px solid rgba(212, 207, 198, 0.08);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: 'Shippori Mincho', serif;
+  font-size: 1rem;
+  padding: 1rem 1.2rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.choice-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--accent-glow), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.choice-btn:hover::before,
+.choice-btn:active::before {
+  opacity: 1;
+}
+.choice-btn:active {
+  transform: scale(0.98);
+  border-color: var(--accent);
+}
+.choice-btn .label {
+  position: relative;
+  z-index: 1;
+}
+.choice-btn .prefix {
+  color: var(--text-dim);
+  margin-right: 0.5rem;
+  font-size: 0.85rem;
+}
+
+/* ===== PROGRESS ===== */
+.progress-bar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--cold), var(--accent));
+  transition: width 0.6s ease;
+  z-index: 100;
+}
+
+.scene-counter {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  letter-spacing: 0.2em;
+  margin-bottom: 1.5rem;
+}
+
+/* ===== NEXT BUTTON (opening/ending) ===== */
+.next-btn {
+  margin-top: 2rem;
+  background: transparent;
+  border: 1px solid rgba(212, 207, 198, 0.15);
+  border-radius: 50px;
+  color: var(--text-dim);
+  font-family: 'Shippori Mincho', serif;
+  font-size: 0.9rem;
+  padding: 0.8rem 2.5rem;
+  cursor: pointer;
+  transition: all 0.4s ease;
+  letter-spacing: 0.15em;
+}
+.next-btn:hover, .next-btn:active {
+  border-color: var(--accent);
+  color: var(--text);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+/* ===== RESULT ===== */
+.result-type-name {
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 2rem;
+  letter-spacing: 0.2em;
+  text-align: center;
+  margin-bottom: 0.4rem;
+  color: var(--text);
+  text-shadow: 0 0 30px var(--accent-glow);
+}
+.result-type-sub {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  letter-spacing: 0.3em;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.radar-wrap {
+  width: 260px;
+  height: 240px;
+  margin: 0 auto 2rem;
+}
+.radar-wrap svg { width: 100%; height: 100%; }
+
+.result-section {
+  max-width: 340px;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+.result-label {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  letter-spacing: 0.2em;
+  margin-bottom: 0.6rem;
+}
+.result-body {
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 1.05rem;
+  line-height: 2;
+  color: var(--text);
+  letter-spacing: 0.03em;
+}
+
+.result-footer {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(212, 207, 198, 0.08);
+  max-width: 340px;
+  width: 100%;
+}
+.result-footer p {
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 0.95rem;
+  line-height: 2.2;
+  color: var(--text-dim);
+  text-align: center;
+  letter-spacing: 0.05em;
+}
+
+.retry-btn {
+  margin-top: 2.5rem;
+  background: transparent;
+  border: 1px solid rgba(212, 207, 198, 0.1);
+  border-radius: 50px;
+  color: var(--text-dim);
+  font-family: 'Shippori Mincho', serif;
+  font-size: 0.85rem;
+  padding: 0.7rem 2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 0.15em;
+}
+.retry-btn:hover { border-color: var(--cold-light); color: var(--text); }
+
+/* ===== AMBIENT ===== */
+.ambient {
+  position: fixed;
+  pointer-events: none;
+  z-index: -1;
+}
+.ambient-top {
+  top: -30%; left: -20%;
+  width: 140%; height: 60%;
+  background: radial-gradient(ellipse, rgba(58, 90, 124, 0.06) 0%, transparent 70%);
+}
+.ambient-bottom {
+  bottom: -20%; right: -20%;
+  width: 80%; height: 50%;
+  background: radial-gradient(ellipse, rgba(232, 130, 58, 0.04) 0%, transparent 70%);
+}
+
+/* ===== LOADING DOTS ===== */
+.loading-dots {
+  display: flex; gap: 6px; margin-top: 1rem;
+}
+.loading-dots span {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  animation: dotPulse 1.2s ease-in-out infinite;
+}
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotPulse {
+  0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+</style>
+</head>
+<body>
+
+<!-- Ambient Background -->
+<div class="ambient ambient-top"></div>
+<div class="ambient ambient-bottom"></div>
+
+<!-- Progress Bar -->
+<div class="progress-bar" id="progressBar" style="width:0%"></div>
+
+<!-- ===== TITLE SCREEN ===== -->
+<div class="screen active fade-in" id="screen-title">
+  <div class="scene-image-wrap" id="openingImage"></div>
+  <div class="opening-title">火加減</div>
+  <div class="opening-sub">HIKAGEN</div>
+  <div class="scene-text">むかしむかし、<br>あなたは、まだ火を持っていませんでした。</div>
+  <button class="next-btn" onclick="startGame()">はじめる</button>
+</div>
+
+<!-- ===== SCENE SCREEN (reused) ===== -->
+<div class="screen" id="screen-scene">
+  <div class="scene-counter" id="sceneCounter"></div>
+  <div class="scene-image-wrap" id="sceneImage"></div>
+  <div class="scene-text" id="sceneText"></div>
+  <div class="choices" id="choices"></div>
+</div>
+
+<!-- ===== ENDING (pre-result) ===== -->
+<div class="screen" id="screen-ending">
+  <div class="scene-image-wrap" id="endingImage"></div>
+  <div class="scene-text">今、あなたの火は、<br>ここにあります。</div>
+  <div class="loading-dots"><span></span><span></span><span></span></div>
+</div>
+
+<!-- ===== RESULT SCREEN ===== -->
+<div class="screen" id="screen-result">
+  <div class="result-type-name" id="resultTypeName"></div>
+  <div class="result-type-sub" id="resultTypeSub"></div>
+  <div class="radar-wrap" id="radarWrap"></div>
+  <div class="result-section">
+    <div class="result-label">今のあなたは</div>
+    <div class="result-body" id="resultNow"></div>
+  </div>
+  <div class="result-section">
+    <div class="result-label">これから</div>
+    <div class="result-body" id="resultFuture"></div>
+  </div>
+  <div class="result-footer">
+    <p>神も、運も、欲も、<br>今の状態を映しているだけです。<br>火加減を知れたことが、<br>すでに調整の始まりです。</p>
+  </div>
+  <button class="retry-btn" onclick="retry()">もう一度</button>
+</div>
+
+<script>
+// ===== DATA =====
+const SCENES = [
+  { id:1, axis:'G', text:'誰かが、あなたの火について\n何かを伝えようとしています。',
+    a:'自分で決めたいと思った', b:'少し耳を傾けてみた' },
+  { id:2, axis:'G', text:'気づくと、\n火はあなた以外の手の中にありました。',
+    a:'取り戻したいと感じた', b:'任せてもいいと感じた' },
+  { id:3, axis:'G', text:'理由は分かりませんが、\n周囲の様子が変わり始めました。',
+    a:'理由を探そうとした', b:'流れとして受け止めた' },
+  { id:4, axis:'L', text:'進んでいた道が、\n突然使えなくなりました。',
+    a:'元の道に戻ろうとした', b:'別の道を探してみた' },
+  { id:5, axis:'L', text:'予定にはなかった人物が、\nあなたの前に現れました。',
+    a:'距離を取った', b:'話を聞いてみた' },
+  { id:6, axis:'L', text:'思い描いていた段取りが、\nうまく進まなくなりました。',
+    a:'立て直そうとした', b:'一度、流れに任せた' },
+  { id:7, axis:'D', text:'火は、思ったより\n強く燃え始めました。',
+    a:'抑えようとした', b:'使えるか考えた' },
+  { id:8, axis:'D', text:'誰かが、\nその火を求めてきました。',
+    a:'守ろうとした', b:'分けてもいいと思った' },
+  { id:9, axis:'D', text:'このまま進むか、\nここに留まるか、考えています。',
+    a:'留まることを選んだ', b:'進むことを選んだ' },
+];
+
+// 27 → 12 type mapping: typeMap[D][G][L]
+// D=0(低),1(中),2(高) / G=0(低),1(中),2(高) / L=0(低),1(中),2(高)
+const typeMap = {
+  0: { 0: { 0:'消火', 1:'消火', 2:'眠火' },
+       1: { 0:'消火', 1:'眠火', 2:'静火' },
+       2: { 0:'眠火', 1:'静火', 2:'静火' } },
+  1: { 0: { 0:'暴火', 1:'揺火', 2:'巡火' },
+       1: { 0:'揺火', 1:'巡火', 2:'巡火' },
+       2: { 0:'揺火', 1:'巡火', 2:'均火' } },
+  2: { 0: { 0:'焼尽', 1:'暴火', 2:'焦火' },
+       1: { 0:'焦火', 1:'烈火', 2:'熱火' },
+       2: { 0:'焦火', 1:'熱火', 2:'昇火' } },
+};
+
+const typeData = {
+  '消火': { sub:'SHOUKA', now:'火を使わず、守ることを選んでいます。\n壊れない代わりに、動きも小さい状態です。', future:'小さな欲を認めたとき、\n火は再び灯り始めるでしょう。' },
+  '静火': { sub:'SEIKA', now:'火を安定させ、\n無理をしない位置にいます。', future:'焦らなければ、\n運は自然に寄ってきます。' },
+  '眠火': { sub:'MINKA', now:'火はありますが、\nまだ使っていません。', future:'必要な場面で、\n火は目を覚ますでしょう。' },
+  '揺火': { sub:'YOUKA', now:'欲と不安の間で、\n火が揺れています。', future:'一つ手放すことで、\n火は安定し始めます。' },
+  '巡火': { sub:'JUNKA', now:'火が人や流れを巡り、\n循環しています。', future:'整えて返すことで、\n流れは長く続くでしょう。' },
+  '均火': { sub:'KINKA', now:'火・運・流れのバランスが取れています。\n願っても歪みにくい状態です。', future:'大きく崩れることなく、\n進んでいけるでしょう。' },
+  '熱火': { sub:'NEKKA', now:'火力があり、\n推進力を持っています。', future:'休息を挟むことで、\n火は長く使えるようになります。' },
+  '烈火': { sub:'REKKA', now:'一点に集中した強い火を持っています。\n短期的な成果を出しやすい状態です。', future:'距離感を保てば、\n火は味方であり続けるでしょう。' },
+  '昇火': { sub:'SHOUKA', now:'火を上へ伸ばそうとしています。\n志と欲が混ざり合っています。', future:'何のためかを定めたとき、\n流れは一本に揃います。' },
+  '焦火': { sub:'SHOUKA', now:'火を急かし、\n結果を追いすぎています。', future:'速度を落とした瞬間、\n運は追いついてきます。' },
+  '暴火': { sub:'BOUKA', now:'欠乏感から、\n強い火を使っています。', future:'勝とうとするのをやめたとき、\n火は静かに戻ります。' },
+  '焼尽': { sub:'SHOUJIN', now:'火を使い切り、\n休息が必要な状態です。', future:'休むことで、\n次の火種が生まれます。' },
+};
+
+// ===== STATE =====
+let currentScene = 0;
+let scores = { G: 0, L: 0, D: 0 };
+
+// ===== IMAGE HELPERS =====
+function loadImage(container, src, fallback) {
+  const img = new Image();
+  img.onload = () => {
+    container.innerHTML = '';
+    container.appendChild(img);
+  };
+  img.onerror = () => {
+    container.innerHTML = '<div class="placeholder"></div>';
+  };
+  img.src = src;
+  // Show placeholder while loading
+  container.innerHTML = '<div class="placeholder"></div>';
+}
+
+function randomVariant() {
+  return Math.floor(Math.random() * 3) + 1;
+}
+
+// ===== SCREEN TRANSITIONS =====
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active', 'fade-in');
+  });
+  const el = document.getElementById(id);
+  el.classList.add('active');
+  // Force reflow
+  void el.offsetWidth;
+  el.classList.add('fade-in');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ===== PROGRESS =====
+function updateProgress(step) {
+  // 0=title, 1-9=scenes, 10=ending, 11=result
+  const pct = Math.round((step / 11) * 100);
+  document.getElementById('progressBar').style.width = pct + '%';
+}
+
+// ===== INIT =====
+function init() {
+  loadImage(document.getElementById('openingImage'), 'images/opening.png');
+  updateProgress(0);
+}
+
+// ===== START =====
+function startGame() {
+  currentScene = 0;
+  scores = { G: 0, L: 0, D: 0 };
+  nextScene();
+}
+
+// ===== SCENE =====
+function nextScene() {
+  if (currentScene >= 9) {
+    showEnding();
+    return;
+  }
+  const scene = SCENES[currentScene];
+  updateProgress(currentScene + 1);
+
+  // Counter
+  document.getElementById('sceneCounter').textContent = `${currentScene + 1} / 9`;
+
+  // Image (random variant)
+  const v = randomVariant();
+  loadImage(document.getElementById('sceneImage'), `images/s${scene.id}-${v}.png`);
+
+  // Text
+  document.getElementById('sceneText').innerHTML = scene.text.replace(/\n/g, '<br>');
+
+  // Choices
+  const choicesEl = document.getElementById('choices');
+  choicesEl.innerHTML = '';
+
+  const options = [
+    { key: 'A', text: scene.a, score: -1 },
+    { key: 'B', text: scene.b, score: +1 },
+    { key: 'C', text: 'どちらでもない', score: 0 },
+  ];
+
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.innerHTML = `<span class="label"><span class="prefix">${opt.key}</span>${opt.text}</span>`;
+    btn.addEventListener('click', () => {
+      choose(scene.axis, opt.score);
+    });
+    choicesEl.appendChild(btn);
+  });
+
+  showScreen('screen-scene');
+}
+
+function choose(axis, score) {
+  scores[axis] += score;
+  currentScene++;
+  // Brief delay for tactile feel
+  setTimeout(nextScene, 300);
+}
+
+// ===== ENDING =====
+function showEnding() {
+  updateProgress(10);
+  loadImage(document.getElementById('endingImage'), 'images/ending.png');
+  showScreen('screen-ending');
+  // Auto-advance to result
+  setTimeout(showResult, 2500);
+}
+
+// ===== RESULT =====
+function toLevel(score) {
+  if (score >= 2) return 2;  // 高
+  if (score <= -2) return 0; // 低
+  return 1;                  // 中
+}
+
+function showResult() {
+  updateProgress(11);
+
+  const gLv = toLevel(scores.G);
+  const lLv = toLevel(scores.L);
+  const dLv = toLevel(scores.D);
+
+  const typeName = typeMap[dLv][gLv][lLv];
+  const data = typeData[typeName];
+
+  document.getElementById('resultTypeName').textContent = typeName;
+  document.getElementById('resultTypeSub').textContent = data.sub;
+  document.getElementById('resultNow').innerHTML = data.now.replace(/\n/g, '<br>');
+  document.getElementById('resultFuture').innerHTML = data.future.replace(/\n/g, '<br>');
+
+  // Radar chart
+  drawRadar(scores.G, scores.L, scores.D);
+
+  showScreen('screen-result');
+}
+
+// ===== RADAR CHART (SVG) =====
+function drawRadar(g, l, d) {
+  const cx = 130, cy = 115, r = 85;
+  // Normalize -3~+3 → 0~1
+  const norm = v => (v + 3) / 6;
+  const ng = norm(g), nl = norm(l), nd = norm(d);
+
+  // 3 axes at 90° apart (top, bottom-right, bottom-left)
+  const angles = [-Math.PI/2, Math.PI/6*5, Math.PI/6*1];
+  const axisLabels = ['神度', '運度', '欲度'];
+  const values = [ng, nl, nd];
+
+  // Helper
+  const px = (angle, dist) => cx + Math.cos(angle) * dist;
+  const py = (angle, dist) => cy + Math.sin(angle) * dist;
+
+  let svg = `<svg viewBox="0 0 260 240" xmlns="http://www.w3.org/2000/svg">`;
+
+  // Grid circles
+  for (let i = 1; i <= 3; i++) {
+    const gr = r * (i / 3);
+    let points = angles.map(a => `${px(a, gr)},${py(a, gr)}`).join(' ');
+    svg += `<polygon points="${points}" fill="none" stroke="rgba(212,207,198,0.06)" stroke-width="1"/>`;
+  }
+
+  // Axis lines
+  angles.forEach(a => {
+    svg += `<line x1="${cx}" y1="${cy}" x2="${px(a, r)}" y2="${py(a, r)}" stroke="rgba(212,207,198,0.08)" stroke-width="1"/>`;
+  });
+
+  // Data polygon
+  let dataPoints = values.map((v, i) => `${px(angles[i], v * r)},${py(angles[i], v * r)}`).join(' ');
+  svg += `<polygon points="${dataPoints}" fill="rgba(232,130,58,0.15)" stroke="#e8823a" stroke-width="2"/>`;
+
+  // Data points
+  values.forEach((v, i) => {
+    const x = px(angles[i], v * r);
+    const y = py(angles[i], v * r);
+    svg += `<circle cx="${x}" cy="${y}" r="4" fill="#e8823a"/>`;
+    svg += `<circle cx="${x}" cy="${y}" r="7" fill="none" stroke="rgba(232,130,58,0.3)" stroke-width="1"/>`;
+  });
+
+  // Labels
+  const labelOffset = 18;
+  const labelStyles = 'font-family="Zen Old Mincho, serif" font-size="12" fill="#7a7672"';
+  // 神度 (top)
+  svg += `<text x="${px(angles[0], r + labelOffset)}" y="${py(angles[0], r + labelOffset)}" text-anchor="middle" ${labelStyles}>${axisLabels[0]}</text>`;
+  // 運度 (bottom-right)
+  svg += `<text x="${px(angles[1], r + labelOffset) + 5}" y="${py(angles[1], r + labelOffset) + 5}" text-anchor="start" ${labelStyles}>${axisLabels[1]}</text>`;
+  // 欲度 (bottom-left)
+  svg += `<text x="${px(angles[2], r + labelOffset) - 5}" y="${py(angles[2], r + labelOffset) + 5}" text-anchor="end" ${labelStyles}>${axisLabels[2]}</text>`;
+
+  // Level indicators
+  const levelLabels = ['低','中','高'];
+  const gLabel = levelLabels[toLevel(g)];
+  const lLabel = levelLabels[toLevel(l)];
+  const dLabel = levelLabels[toLevel(d)];
+  const valStyles = 'font-family="Zen Old Mincho, serif" font-size="10" fill="#e8823a"';
+  svg += `<text x="${px(angles[0], r + labelOffset)}" y="${py(angles[0], r + labelOffset) + 14}" text-anchor="middle" ${valStyles}>${gLabel}</text>`;
+  svg += `<text x="${px(angles[1], r + labelOffset) + 5}" y="${py(angles[1], r + labelOffset) + 18}" text-anchor="start" ${valStyles}>${lLabel}</text>`;
+  svg += `<text x="${px(angles[2], r + labelOffset) - 5}" y="${py(angles[2], r + labelOffset) + 18}" text-anchor="end" ${valStyles}>${dLabel}</text>`;
+
+  svg += `</svg>`;
+  document.getElementById('radarWrap').innerHTML = svg;
+}
+
+// ===== RETRY =====
+function retry() {
+  showScreen('screen-title');
+  updateProgress(0);
+  loadImage(document.getElementById('openingImage'), 'images/opening.png');
+}
+
+// ===== GO =====
+init();
+</script>
+</body>
+</html>
